@@ -2,332 +2,532 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Audit Opname - Pribadishop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pribadishop Opname Tools - AUDIT</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
-      /* Tema khusus Audit agar tidak tertukar dengan web Kasir */
-      --primary: #3b2c63; /* Ungu tua elegan untuk audit */
-      --primary-dark: #2a1f47;
-      --success: #10b981;
-      --success-dark: #059669;
-      --danger: #ef4444;
-      --danger-dark: #dc2626;
-      --bg: #f3f4f6;
-      --surface: #ffffff;
-      --text: #1f2937;
-      --border: #e5e7eb;
-      --radius: 8px;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --primary: #165dff;
+      --primary-dark: #0d47c7;
+      --success: #15803d;
+      --danger: #b42318;
+      --warn: #b76e00;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
-    
-    .header { background: var(--primary); color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .header h1 { font-size: 1.25rem; font-weight: 600; }
-    .header p { font-size: 0.85rem; opacity: 0.8; }
-    .badge-audit { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; vertical-align: middle; margin-left: 5px; }
 
-    .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
-    .card { background: var(--surface); padding: 1.25rem; border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
-    
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #4b5563; }
-    .form-control { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 1rem; transition: border-color 0.2s; }
-    .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 44, 99, 0.1); }
-    
-    .btn { display: inline-block; width: 100%; padding: 0.75rem; font-weight: 600; text-align: center; border: none; border-radius: var(--radius); cursor: pointer; transition: background 0.2s; font-size: 1rem; }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-success { background: var(--success); color: white; }
-    .btn-success:hover { background: var(--success-dark); }
-    .btn-danger { background: var(--danger); color: white; padding: 0.4rem 0.75rem; font-size: 0.85rem; }
-    .btn-danger:hover { background: var(--danger-dark); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
 
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .flex-gap { display: flex; gap: 0.5rem; }
-    .flex-gap .form-control { flex: 1; }
+    .shell {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0 14px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      height: 46px;
+      width: auto;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    .header-text h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.1;
+      color: var(--text);
+    }
     
-    .status-bar { padding: 0.5rem; border-radius: var(--radius); margin-bottom: 1rem; text-align: center; font-weight: 600; font-size: 0.875rem; }
-    .status-offline { background: #fee2e2; color: #991b1b; }
-    .status-online { background: #d1fae5; color: #065f46; }
+    .badge-audit {
+      background: #f59e0b;
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      vertical-align: middle;
+      margin-left: 5px;
+    }
 
-    .item-info { background: #f8fafc; padding: 1rem; border-radius: var(--radius); border: 1px dashed #cbd5e1; margin-bottom: 1rem; font-size: 0.9rem; }
-    .item-info strong { display: block; font-size: 1.1rem; color: var(--primary); margin-bottom: 0.25rem; }
+    .subtitle {
+      margin: 4px 0 0 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
 
-    /* Styling Table Khusus Audit */
-    .table-responsive { overflow-x: auto; margin-top: 0.5rem; }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.85rem; }
-    th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
-    th { background: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
-    .qty { text-align: center; font-weight: 500; }
-    .text-danger { color: var(--danger); font-weight: bold; }
-    .text-success { color: var(--success); font-weight: bold; }
-    .text-primary { color: var(--primary); font-weight: bold; }
-    .pill { display: inline-block; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; margin-top: 4px; }
-    
-    .empty { text-align: center; padding: 2rem; color: #64748b; font-style: italic; }
+    .status {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
 
-    .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 1rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; gap: 1rem; justify-content: center; z-index: 10; }
-    .action-bar .btn { max-width: 300px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    h2 {
+      font-size: 15px;
+      margin: 0 0 12px;
+    }
+
+    label {
+      display: block;
+      margin: 11px 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #344054;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 43px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12);
+    }
+
+    button {
+      min-height: 43px;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    button:hover { background: var(--primary-dark); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .btn-full { width: 100%; margin-top: 10px; }
+    .btn-soft { background: #eef4ff; color: var(--primary); border: 1px solid #c7d7fe; }
+    .btn-soft:hover { background: #dfeaff; }
+    .btn-success { background: var(--success); }
+    .btn-success:hover { background: #106330; }
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { background: #8d1d15; }
+
+    #reader {
+      display: none;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-top: 10px;
+      background: #101828;
+    }
+
+    .result {
+      min-height: 66px;
+      margin-top: 12px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .result strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 15px;
+    }
+
+    .result span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .action-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .action-item {
+      text-align: center;
+      background: #f9fafb;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #eaecf0;
+    }
+    .action-item button {
+      width: 100%;
+      margin-top: 0;
+      margin-bottom: 6px;
+    }
+    .action-item small {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .table-wrap {
+      max-height: 62vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 9px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #eef2f7;
+      font-size: 12px;
+    }
+
+    .qty {
+      width: 65px;
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .text-danger { color: var(--danger); }
+    .text-success { color: var(--success); }
+    .text-primary { color: var(--primary); }
+
+    .empty {
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .pill {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #eef2f7;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: #fff;
+      background: #172033;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      display: none;
+      z-index: 10;
+    }
+
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+      .status { white-space: normal; }
+      .action-panel { grid-template-columns: 1fr; }
+      .table-wrap { max-height: none; }
+    }
   </style>
 </head>
 <body>
-
-  <div class="header">
-    <h1>Pribadishop <span class="badge-audit">AUDIT MODE</span></h1>
-    <p>Sistem Opname Terpusat (Real-Time)</p>
-  </div>
-
-  <div class="container">
-    <div id="connectionStatus" class="status-bar status-offline">Memilih Cabang...</div>
-
-    <div class="card">
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Petugas Audit</label>
-          <input type="text" id="petugas" class="form-control" placeholder="Nama Anda..." onchange="loadData()">
-        </div>
-        <div class="form-group">
-          <label>Cabang / Gudang</label>
-          <select id="cabang" class="form-control" onchange="switchBranch()">
-            <option value="">-- Pilih Cabang --</option>
-            <option value="UTM">UTM - Pusat</option>
-            <option value="PSSMD">PSSMD - Cabang</option>
-            <option value="TAMPOS">TAMPOMAS - Cabang</option>
-            <option value="SITUR">SITURAJA - Cabang</option>
-          </select>
+  <div class="shell">
+    
+    <header>
+      <div class="header-left">
+        <img src="https://res.cloudinary.com/dvvjbnjzd/image/upload/v1781251741/logo_Pribadishop_mhpxft.jpg" alt="Logo" class="logo">
+        <div class="header-text">
+          <h1>Pribadishop Opname <span class="badge-audit">AUDIT</span></h1>
+          <p class="subtitle">Dibuat oleh @muklis by anntech.my.id</p>
         </div>
       </div>
-    </div>
+      <div class="status" id="connectionStatus">Memeriksa server...</div>
+    </header>
 
-    <div class="card">
-      <div class="form-group">
-        <label>Scan Barcode</label>
-        <div class="flex-gap">
-          <input type="text" id="barcode" class="form-control" placeholder="Arahkan scanner ke sini..." autocomplete="off">
-          <button type="button" class="btn btn-primary" style="width:auto;" onclick="cekBarang()" id="btnCek">Cari</button>
-        </div>
-      </div>
+    <div class="grid">
+      <section>
+        <h2>Input Scan</h2>
 
-      <div id="itemResult" style="display: none;">
-        <div class="item-info">
-          <strong id="lblNamaBarang">-</strong>
-          <span id="lblKodeItem" class="pill">-</span>
+        <label for="petugas">Petugas Audit</label>
+        <input id="petugas" autocomplete="name" placeholder="Nama petugas (harus sama agar tabel muncul)">
+
+        <label for="store">Cabang / Gudang</label>
+        <select id="store">
+          <option value="UTM">UTM - Pusat</option>
+          <option value="GDB">GDB - Pusat</option>
+          <option value="PSSMD">PSSMD - Cabang</option>
+          <option value="TAMPOS">TAMPOS - Cabang</option>
+          <option value="SITUR">SITUR - Cabang</option>
+        </select>
+
+        <div class="btn-row">
+          <button id="scanBtn" type="button">Scan Kamera</button>
+          <button id="stopBtn" class="btn-soft" type="button" disabled>Tutup Kamera</button>
         </div>
+        <div id="reader"></div>
+
+        <label for="barcode">Barcode / Kode Item</label>
+        <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Scan atau ketik barcode">
+        <button id="findBtn" class="btn-full btn-soft" type="button">Cari Barang</button>
+
+        <div class="result" id="itemResult">
+          <strong>Belum ada barang dipilih</strong>
+          <span>Scan barcode atau masukkan kode item manual.</span>
+        </div>
+
+        <label for="qty">Qty Fisik</label>
+        <input id="qty" type="number" inputmode="decimal" step="0.01" placeholder="0">
+        <button id="saveBtn" class="btn-full btn-success" type="button">Simpan Scan</button>
+      </section>
+
+      <section>
+        <h2>Daftar Scan & Aksi</h2>
         
-        <div class="grid-2">
-          <div class="form-group">
-            <label>Qty Fisik (Hitung Manual)</label>
-            <input type="number" id="qtyFisik" class="form-control" placeholder="0" step="0.01" min="0">
+        <div class="action-panel">
+          <div class="action-item">
+            <button id="syncBtn" class="btn-success" type="button">Kirim ke Sheet</button>
+            <small>Kirim data gabungan <b>jika semua orang</b> sudah beres hitung.</small>
           </div>
-          <div class="form-group">
-            <label>&nbsp;</label>
-            <button type="button" class="btn btn-success" onclick="simpanScan()" id="btnSimpan">Simpan Data</button>
+          <div class="action-item">
+            <button id="downloadBtn" type="button">Download SO</button>
+            <small>Download <b>per orang</b> (hanya data hitung milik Anda).</small>
+          </div>
+          <div class="action-item">
+            <button id="clearBtn" class="btn-danger" type="button">Kosongkan</button>
+            <small>Kosongkan <b>semua data gabungan</b> tim di cabang ini.</small>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="card" style="margin-bottom: 80px;">
-      <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--primary);">Hasil Scan Anda (Audit)</h3>
-      <div class="table-responsive" id="tableWrap">
-        <div class="empty">Belum ada data...</div>
-      </div>
+        <div class="table-wrap" id="tableWrap">
+          <div class="empty">Belum ada data scan.</div>
+        </div>
+      </section>
     </div>
   </div>
 
-  <div class="action-bar">
-    <button type="button" class="btn btn-success" onclick="syncData()" id="btnSync">Kirim ke Sheet & WA</button>
-  </div>
+  <div class="toast" id="toast"></div>
 
   <script>
-    // MAPPING TUNNEL DESENTRALISASI
+    // ==========================================
+    // PETA (ROUTING) CLOUDFLARE TUNNEL TIAP CABANG
+    // ==========================================
     const TUNNEL_MAP = {
       "UTM": "https://api-utm.anntech.my.id",
+      "GDB": "https://api-utm.anntech.my.id",
       "PSSMD": "https://api-pssmd.anntech.my.id",
       "TAMPOS": "https://api-tampomas.anntech.my.id",
       "SITUR": "https://api-situraja.anntech.my.id"
     };
 
-    let state = {
-      baseUrl: "",
-      rows: [],
-      currentItem: null 
+    function getBackendUrl() {
+      const store = document.getElementById("store").value;
+      return TUNNEL_MAP[store] || "";
+    }
+    // ==========================================
+
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      currentItem: null,
+      scanner: null,
+      scanning: false,
+      rows: []
     };
 
-    const $ = id => document.getElementById(id);
+    const savedPetugas = localStorage.getItem("opname_petugas");
+    const savedStore = localStorage.getItem("opname_store");
+    if (savedPetugas) $("petugas").value = savedPetugas;
+    if (savedStore) $("store").value = savedStore;
 
-    function formatNumber(num) {
-      if (num === null || num === undefined) return 0;
-      return parseFloat(num).toLocaleString('id-ID');
+    function toast(message, type = "normal") {
+      const el = $("toast");
+      el.textContent = message;
+      el.style.background = type === "error" ? "#b42318" : type === "success" ? "#15803d" : "#172033";
+      el.style.display = "block";
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => { el.style.display = "none"; }, 3200);
     }
 
-    async function switchBranch() {
-      const branch = $("cabang").value;
-      if (!branch) {
-        setConnectionStatus("Pilih cabang terlebih dahulu", false);
-        state.baseUrl = "";
-        return;
-      }
-
-      state.baseUrl = TUNNEL_MAP[branch] || "";
-      setConnectionStatus(`Menghubungkan ke ${branch}...`, false);
-
-      try {
-        const res = await fetch(`${state.baseUrl}/api/config`);
-        if (!res.ok) throw new Error("Gagal koneksi");
-        setConnectionStatus(`Terhubung: ${branch}`, true);
-        loadData();
-      } catch (err) {
-        setConnectionStatus(`Gagal terhubung ke server ${branch}`, false);
-        state.rows = [];
-        renderTable();
-      }
+    function saveSettings() {
+      localStorage.setItem("opname_petugas", $("petugas").value.trim());
+      localStorage.setItem("opname_store", $("store").value);
     }
 
-    function setConnectionStatus(msg, isOk) {
-      const el = $("connectionStatus");
-      el.textContent = msg;
-      if (isOk) {
-        el.className = "status-bar status-online";
-      } else {
-        el.className = "status-bar status-offline";
-      }
-    }
-
-    // Listener untuk Barcode Scanner (Enter = Cari)
-    $("barcode").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        cekBarang();
-      }
-    });
-
-    // Listener untuk Input Qty (Enter = Simpan)
-    $("qtyFisik").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        simpanScan();
-      }
-    });
-
-    async function cekBarang() {
-      if (!state.baseUrl) return alert("Silakan pilih Cabang yang valid!");
-      const branch = $("cabang").value;
-      const barcode = $("barcode").value.trim();
+    async function apiJson(endpoint, options = {}) {
+      const baseUrl = getBackendUrl();
+      if (!baseUrl) throw new Error("URL Server cabang ini belum dikonfigurasi.");
       
-      if (!barcode) return;
-
-      $("btnCek").disabled = true;
-      $("btnCek").textContent = "...";
-
-      try {
-        const res = await fetch(`${state.baseUrl}/api/cek_barang?toko=${branch}&barcode=${encodeURIComponent(barcode)}`);
-        const data = await res.json();
-        
-        if (data.status === "sukses") {
-          // Simpan data sistem (termasuk HPP dan Stok Komputer) ke state
-          state.currentItem = {
-            barcode: barcode,
-            kode_item: data.kodeitem,
-            nama_barang: data.nama_barang,
-            qty_inventory: data.stok_sistem || 0,
-            hpp_satuan: data.hpp_satuan || 0
-          };
-
-          $("lblNamaBarang").textContent = data.nama_barang;
-          $("lblKodeItem").textContent = data.kodeitem;
-          $("itemResult").style.display = "block";
-          $("qtyFisik").value = "";
-          $("qtyFisik").focus();
-        } else {
-          alert(data.pesan || "Barang tidak ditemukan!");
-          $("barcode").select();
-        }
-      } catch (err) {
-        alert("Gagal menghubungi server lokal: " + err.message);
-      } finally {
-        $("btnCek").disabled = false;
-        $("btnCek").textContent = "Cari";
+      const fullUrl = baseUrl + endpoint;
+      const res = await fetch(fullUrl, options);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.status === "error") {
+        throw new Error(data.pesan || "Request gagal.");
       }
+      return data;
     }
 
-    async function simpanScan() {
-      if (!state.currentItem) return;
-      const petugas = $("petugas").value.trim();
-      const cabang = $("cabang").value;
-      const qtyFisik = parseFloat($("qtyFisik").value);
-
-      if (!petugas) return alert("Nama petugas harus diisi!");
-      if (!qtyFisik || qtyFisik <= 0) return alert("Qty fisik harus lebih dari 0!");
-
-      $("btnSimpan").disabled = true;
-      $("btnSimpan").textContent = "Menyimpan...";
-
+    async function logActivity(aksi) {
       const payload = {
-        petugas: petugas,
-        cabang: cabang,
-        barcode: state.currentItem.barcode,
-        kode_item: state.currentItem.kode_item,
-        nama_barang: state.currentItem.nama_barang,
-        qty_fisik: qtyFisik,
-        // Data krusial untuk perhitungan audit yang dikirim ke backend
-        qty_inventory: state.currentItem.qty_inventory, 
-        hpp_satuan: state.currentItem.hpp_satuan
+        petugas: $("petugas").value.trim() || "Anonim",
+        cabang: $("store").value,
+        aksi: aksi
       };
-
       try {
-        const res = await fetch(`${state.baseUrl}/api/simpan`, {
+        await fetch(getBackendUrl() + "/api/log_action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        
-        if (data.status === "sukses") {
-          state.rows = data.data;
-          renderTable();
-          // Reset UI
-          $("barcode").value = "";
-          $("itemResult").style.display = "none";
-          state.currentItem = null;
-          $("barcode").focus();
-        } else {
-          alert(data.pesan || "Gagal menyimpan!");
-        }
       } catch (err) {
-        alert("Error server: " + err.message);
-      } finally {
-        $("btnSimpan").disabled = false;
-        $("btnSimpan").textContent = "Simpan Data";
+        console.log("Gagal mencatat log", err);
       }
     }
 
-    async function loadData() {
-      if (!state.baseUrl) return;
-      const cabang = $("cabang").value;
-      if (!cabang) return;
-      
+    async function checkServer() {
       try {
-        const res = await fetch(`${state.baseUrl}/api/list/${cabang}`);
-        const data = await res.json();
-        if (data.status === "sukses") {
-          state.rows = data.data;
-          renderTable();
-        }
+        await apiJson("/api/config");
+        $("connectionStatus").textContent = "Terhubung: " + $("store").value;
+        $("connectionStatus").style.color = "var(--success)";
       } catch (err) {
-        console.error("Load data error:", err);
+        $("connectionStatus").textContent = "Koneksi " + $("store").value + " Terputus";
+        $("connectionStatus").style.color = "var(--danger)";
       }
     }
 
-    async function deleteRow(id) {
-      if (!confirm("Hapus baris ini?")) return;
+    function renderItem(item) {
+      state.currentItem = item;
+      $("itemResult").innerHTML = `
+        <strong>${escapeHtml(item.nama_barang)}</strong>
+        <span>Kode item: ${escapeHtml(item.kodeitem)} | Stok Sistem: ${formatNumber(item.stok_sistem)}</span>
+      `;
+      $("qty").focus();
+    }
+
+    function resetItem(message = "Siap scan berikutnya.") {
+      state.currentItem = null;
+      $("barcode").value = "";
+      $("qty").value = "";
+      $("itemResult").innerHTML = `<strong>${message}</strong><span>Scan barcode atau masukkan kode item manual.</span>`;
+      $("barcode").focus();
+    }
+
+    async function findItem(barcodeValue) {
+      saveSettings();
+      const store = $("store").value;
+      const barcode = String(barcodeValue || $("barcode").value).trim();
+      if (!$("petugas").value.trim()) return toast("Isi nama petugas dulu.", "error");
+      if (!barcode) return toast("Barcode masih kosong.", "error");
+
+      $("itemResult").innerHTML = "<strong>Mencari barang...</strong><span>Mohon tunggu.</span>";
       try {
-        const res = await fetch(`${state.baseUrl}/api/hapus/${id}`, { method: "POST" });
-        if (res.ok) loadData();
+        const data = await apiJson(`/api/cek_barang?store=${encodeURIComponent(store)}&barcode=${encodeURIComponent(barcode)}`);
+        renderItem(data);
       } catch (err) {
-        alert("Gagal menghapus.");
+        state.currentItem = null;
+        $("itemResult").innerHTML = `<strong>Barang tidak ditemukan</strong><span>${escapeHtml(err.message)}</span>`;
+        $("barcode").select();
+      }
+    }
+
+    async function saveScan() {
+      saveSettings();
+      if (!state.currentItem) return toast("Cari barang dulu.", "error");
+      const qty = Number($("qty").value);
+      if (!qty || qty <= 0) return toast("Isi qty fisik yang benar.", "error");
+
+      const payload = {
+        petugas: $("petugas").value.trim(),
+        cabang: $("store").value,
+        barcode: $("barcode").value.trim() || state.currentItem.kodeitem,
+        kode_item: state.currentItem.kodeitem,
+        nama_barang: state.currentItem.nama_barang,
+        qty_fisik: qty,
+        qty_inventory: Number(state.currentItem.stok_sistem || 0),
+        hpp_satuan: Number(state.currentItem.hpp_satuan || 0)
+      };
+
+      try {
+        const data = await apiJson("/api/simpan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        state.rows = data.data || [];
+        renderTable();
+        resetItem("Data tersimpan.");
+        toast("Scan tersimpan.", "success");
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    }
+
+    async function loadRows() {
+      try {
+        const data = await apiJson(`/api/list/${encodeURIComponent($("store").value)}`);
+        state.rows = data.data || [];
+        renderTable();
+      } catch (err) {
+        toast(err.message, "error");
       }
     }
 
@@ -346,6 +546,7 @@
           <thead>
             <tr>
               <th>Barang</th>
+              <th>Barcode</th>
               <th class="qty">Fisik</th>
               <th class="qty">Sistem</th>
               <th class="qty">Selisih</th>
@@ -354,27 +555,29 @@
           </thead>
           <tbody>
             ${myRows.map(row => {
-              // Menentukan Warna Selisih
+              
+              // Logika pewarnaan angka selisih
               let selisihClass = "";
               let selisihTeks = formatNumber(row.qty_selisih);
               
               if (row.qty_selisih < 0) {
-                selisihClass = "text-danger"; // Merah
+                selisihClass = "text-danger"; // Minus -> Merah
               } else if (row.qty_selisih > 0) {
-                selisihClass = "text-success"; // Hijau
-                selisihTeks = "+" + selisihTeks;
+                selisihClass = "text-success"; // Plus -> Hijau
+                selisihTeks = "+" + selisihTeks; 
               }
 
               return `
               <tr>
                 <td>
-                  <strong>${row.nama_barang}</strong>
-                  <div class="pill">${row.kode_item} / ${row.barcode}</div>
+                  <strong>${escapeHtml(row.nama_barang)}</strong>
+                  <span class="pill">${escapeHtml(row.kode_item)} / ${escapeHtml(row.kode_gudang)}</span>
                 </td>
+                <td>${escapeHtml(row.barcode)}</td>
                 <td class="qty">${formatNumber(row.qty_fisik)}</td>
                 <td class="qty text-primary">${formatNumber(row.qty_inventory)}</td>
-                <td class="qty ${selisihClass}">${selisihTeks}</td>
-                <td><button class="btn-danger" type="button" onclick="deleteRow(${row.id})">Del</button></td>
+                <td class="qty ${selisihClass}" style="font-weight: 900;">${selisihTeks}</td>
+                <td><button class="btn-danger" style="padding: 6px 10px; min-height: auto;" type="button" onclick="deleteRow(${row.id})">Del</button></td>
               </tr>
               `;
             }).join("")}
@@ -384,32 +587,159 @@
       $("tableWrap").innerHTML = html;
     }
 
-    async function syncData() {
-      const cabang = $("cabang").value;
-      if (!state.baseUrl || !cabang) return alert("Pilih cabang dulu!");
-      if (!confirm(`Kirim data ${cabang} ke Google Sheet sekarang?`)) return;
-
-      const btn = $("btnSync");
-      btn.disabled = true;
-      btn.textContent = "Sedang Mengirim... Mohon Tunggu";
-
+    async function deleteRow(id) {
+      if (!confirm("Hapus item ini?")) return;
       try {
-        const res = await fetch(`${state.baseUrl}/api/sync/${cabang}`, { method: "POST" });
-        const data = await res.json();
-        
-        if (data.status === "sukses") {
-          alert("SUKSES!\n" + (data.pesan || "Data berhasil disinkronisasi ke Google Sheet dan WhatsApp."));
-          loadData();
-        } else {
-          alert("GAGAL: " + data.pesan);
-        }
+        await apiJson(`/api/hapus/${id}`, { method: "POST" });
+        await loadRows();
       } catch (err) {
-        alert("Terjadi kesalahan jaringan/timeout saat sinkronisasi. Cek log server.");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Kirim ke Sheet & WA";
+        toast(err.message, "error");
       }
     }
+
+    async function clearRows() {
+      const store = $("store").value;
+      if (!confirm(`HATI-HATI! Yakin ingin mengosongkan SEMUA data scan tim untuk cabang ${store}?`)) return;
+      
+      logActivity("Klik Tombol KOSONGKAN"); 
+      
+      try {
+        await apiJson(`/api/kosongkan/${encodeURIComponent(store)}`, { method: "POST" });
+        state.rows = [];
+        renderTable();
+        toast("Semua data dikosongkan.", "success");
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    }
+
+    async function syncRows() {
+      const store = $("store").value;
+      if (!state.rows.length) return toast("Belum ada data untuk dikirim.", "error");
+      if (!confirm(`Kirim seluruh data tim (gabungan) cabang ${store} ke Google Sheet?`)) return;
+      
+      logActivity("Klik Tombol KIRIM KE SHEET");
+      
+      const btn = $("syncBtn");
+      const originalText = btn.textContent;
+      
+      btn.disabled = true;
+      btn.textContent = "⏳ Mengirim... Mohon Tunggu";
+      
+      try {
+        const data = await apiJson(`/api/sync/${encodeURIComponent(store)}`, { method: "POST" });
+        toast(data.pesan || "Data terkirim ke Google Sheet.", "success");
+        await loadRows();
+      } catch (err) {
+        toast(err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    function downloadSo() {
+      const store = $("store").value;
+      const petugas = $("petugas").value.trim();
+      const baseUrl = getBackendUrl();
+      
+      if (!baseUrl) return toast("Sistem gagal mengalihkan download.", "error");
+      if (!petugas) return toast("Isi nama petugas dulu untuk mendownload file khusus Anda.", "error");
+      
+      logActivity("Klik Tombol DOWNLOAD SO (Per Orang)"); 
+      window.location.href = `${baseUrl}/download/${encodeURIComponent(store)}?petugas=${encodeURIComponent(petugas)}`;
+    }
+
+    async function startScanner() {
+      if (state.scanning) return;
+      saveSettings();
+      if (!$("petugas").value.trim()) return toast("Isi nama petugas dulu.", "error");
+
+      $("reader").style.display = "block";
+      $("scanBtn").disabled = true;
+      $("stopBtn").disabled = false;
+
+      try {
+        state.scanner = new Html5Qrcode("reader");
+        await state.scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 160 } },
+          async (decodedText) => {
+            await stopScanner();
+            $("barcode").value = decodedText;
+            findItem(decodedText);
+          }
+        );
+        state.scanning = true;
+      } catch (err) {
+        await stopScanner();
+        toast("Kamera gagal dibuka. Pastikan izin kamera aktif dan akses via HTTPS.", "error");
+      }
+    }
+
+    async function stopScanner() {
+      if (state.scanner) {
+        try {
+          await state.scanner.stop();
+        } catch (err) {}
+        try {
+          state.scanner.clear();
+        } catch (err) {}
+      }
+      state.scanner = null;
+      state.scanning = false;
+      $("reader").style.display = "none";
+      $("scanBtn").disabled = false;
+      $("stopBtn").disabled = true;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 });
+    }
+
+    $("petugas").addEventListener("input", () => {
+      saveSettings();
+      renderTable();
+    });
+    
+    $("store").addEventListener("change", () => { 
+      saveSettings(); 
+      checkServer();
+      loadRows(); 
+      resetItem("Cabang diganti."); 
+    });
+
+    $("findBtn").addEventListener("click", () => findItem());
+    $("saveBtn").addEventListener("click", saveScan);
+    $("scanBtn").addEventListener("click", startScanner);
+    $("stopBtn").addEventListener("click", stopScanner);
+    $("syncBtn").addEventListener("click", syncRows);
+    $("downloadBtn").addEventListener("click", downloadSo);
+    $("clearBtn").addEventListener("click", clearRows);
+    $("barcode").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        findItem();
+      }
+    });
+    $("qty").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveScan();
+      }
+    });
+
+    checkServer();
+    loadRows();
   </script>
 </body>
 </html>
