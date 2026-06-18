@@ -653,7 +653,7 @@
       }
     }
 
-    function executeDownload(mode) {
+    async function executeDownload(mode) {
       const store = $("store").value;
       const petugas = $("petugas").value.trim();
       const baseUrl = getBackendUrl();
@@ -662,7 +662,54 @@
       if (!petugas) return toast("Isi nama petugas dulu untuk mendownload file khusus Anda.", "error");
       
       logActivity(`Klik Tombol DOWNLOAD SO (${mode.toUpperCase()})`); 
-      window.location.href = `${baseUrl}/download/${encodeURIComponent(store)}?mode=${mode}&petugas=${encodeURIComponent(petugas)}`;
+      
+      // Deteksi tombol mana yang diklik agar animasinya tepat sasaran
+      const btn = mode === "global" ? $("downloadGlobalBtn") : $("downloadBtn");
+      const originalText = btn.textContent;
+      
+      // Kunci tombol dan ubah teks jadi animasi loading
+      btn.disabled = true;
+      btn.textContent = "⏳ Memproses...";
+
+      try {
+        const url = `${baseUrl}/download/${encodeURIComponent(store)}?mode=${mode}&petugas=${encodeURIComponent(petugas)}`;
+        
+        // Meminta file ke Python dan menunggunya selesai menggunakan fetch
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || "Gagal mengunduh file SO.");
+        }
+
+        // Mengambil nama file asli dari server, atau pakai nama cadangan
+        let filename = `format_so_${store}_${mode}_${petugas}.xlsx`;
+        const disposition = response.headers.get('content-disposition');
+        if (disposition && disposition.includes('filename=')) {
+            filename = disposition.split('filename=')[1].replace(/["']/g, "");
+        }
+
+        // Mengubah data yang diterima menjadi blob dan mendownloadnya
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Membersihkan url sementara setelah file terdownload
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+        
+        toast(`File SO ${mode.toUpperCase()} berhasil diunduh.`, "success");
+      } catch (err) {
+        toast("Download gagal: " + err.message, "error");
+      } finally {
+        // Kembalikan tombol ke warna dan tulisan aslinya
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
     }
 
     $("downloadBtn").addEventListener("click", () => executeDownload("partial"));
@@ -671,7 +718,7 @@
       const confirmGlobal = confirm(
         "PENTING: Anda akan melakukan DOWNLOAD SO GLOBAL (Sapu Jagat).\n\n" +
         "Sistem akan menarik seluruh Master Item dari IPOS dan mengubah stok barang yang TIDAK DI-SCAN menjadi 0.\n" +
-        "Proses ini mungkin membutuhkan waktu 3-10 detik.\n\n" +
+        "Proses ini mungkin membutuhkan waktu beberapa detik.\n\n" +
         "Lanjutkan?"
       );
       if (confirmGlobal) executeDownload("global");
