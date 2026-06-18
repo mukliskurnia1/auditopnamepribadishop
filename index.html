@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pribadishop Opname Tools</title>
+  <title>Pribadishop Opname - AUDIT</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
@@ -12,8 +12,9 @@
       --text: #172033;
       --muted: #667085;
       --line: #d9e0ea;
-      --primary: #165dff;
-      --primary-dark: #0d47c7;
+      /* Warna utama diubah ke Ungu/Indigo untuk pembeda halaman Audit */
+      --primary: #4f46e5; 
+      --primary-dark: #3730a3;
       --success: #15803d;
       --danger: #b42318;
       --warn: #b76e00;
@@ -60,6 +61,18 @@
       font-size: 20px;
       line-height: 1.1;
       color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-audit {
+      background: #f59e0b;
+      color: #fff;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: bold;
     }
 
     .subtitle {
@@ -119,7 +132,7 @@
 
     input:focus, select:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
     }
 
     button {
@@ -139,8 +152,8 @@
     button:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     .btn-full { width: 100%; margin-top: 10px; }
-    .btn-soft { background: #eef4ff; color: var(--primary); border: 1px solid #c7d7fe; }
-    .btn-soft:hover { background: #dfeaff; }
+    .btn-soft { background: #eef2ff; color: var(--primary); border: 1px solid #c7d2fe; }
+    .btn-soft:hover { background: #e0e7ff; }
     .btn-success { background: var(--success); }
     .btn-success:hover { background: #106330; }
     .btn-danger { background: var(--danger); }
@@ -179,7 +192,6 @@
       line-height: 1.35;
     }
 
-    /* Diubah menjadi 4 kolom untuk menampung tombol Global */
     .action-panel {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -222,6 +234,7 @@
       border-collapse: collapse;
       font-size: 13px;
       background: #fff;
+      min-width: 500px; /* Lebar minimum agar kolom audit tidak terlalu terjepit */
     }
 
     th, td {
@@ -240,10 +253,14 @@
     }
 
     .qty {
-      width: 76px;
+      width: 65px;
       text-align: right;
       font-weight: 700;
     }
+
+    .text-danger { color: var(--danger); }
+    .text-success { color: var(--success); }
+    .text-primary { color: var(--primary); }
 
     .empty {
       padding: 22px;
@@ -281,7 +298,6 @@
       .grid { grid-template-columns: 1fr; }
       header { align-items: flex-start; flex-direction: column; }
       .status { white-space: normal; }
-      /* Di HP jadi 2 kolom agar tombol tidak terlalu kecil */
       .action-panel { grid-template-columns: repeat(2, 1fr); }
       .table-wrap { max-height: none; }
     }
@@ -294,7 +310,7 @@
       <div class="header-left">
         <img src="https://res.cloudinary.com/dvvjbnjzd/image/upload/v1781251741/logo_Pribadishop_mhpxft.jpg" alt="Logo" class="logo">
         <div class="header-text">
-          <h1>Pribadishop Opname Tools</h1>
+          <h1>Pribadishop Opname <span class="badge-audit">AUDIT</span></h1>
           <p class="subtitle">Dibuat oleh @muklis by anntech.my.id</p>
         </div>
       </div>
@@ -303,9 +319,9 @@
 
     <div class="grid">
       <section>
-        <h2>Input Scan</h2>
+        <h2>Input Scan (Tim Audit)</h2>
 
-        <label for="petugas">Petugas</label>
+        <label for="petugas">Petugas Audit</label>
         <input id="petugas" autocomplete="name" placeholder="Nama petugas (harus sama agar tabel muncul)">
 
         <label for="store">Cabang / Gudang</label>
@@ -373,11 +389,11 @@
     // PETA (ROUTING) CLOUDFLARE TUNNEL TIAP CABANG
     // ==========================================
     const TUNNEL_MAP = {
-      "UTM": "https://api-training.anntech.my.id",
-      "GDB": "https://api-training.anntech.my.id", // Asumsi GDB pakai server Pusat/UTM
-      "PSSMD": "https://api-training.anntech.my.id",
-      "TAMPOS": "https://api-training.anntech.my.id",
-      "SITUR": "https://api-training.anntech.my.id"
+      "UTM": "https://api-utm.anntech.my.id",
+      "GDB": "https://api-utm.anntech.my.id",
+      "PSSMD": "https://api-pssmd.anntech.my.id",
+      "TAMPOS": "https://api-tampomas.anntech.my.id",
+      "SITUR": "https://api-situraja.anntech.my.id"
     };
 
     function getBackendUrl() {
@@ -456,9 +472,10 @@
 
     function renderItem(item) {
       state.currentItem = item;
+      // Menampilkan informasi stok sistem saat pencarian (khusus web Audit)
       $("itemResult").innerHTML = `
         <strong>${escapeHtml(item.nama_barang)}</strong>
-        <span>Kode item: ${escapeHtml(item.kodeitem)}</span>
+        <span>Kode item: ${escapeHtml(item.kodeitem)} | Stok IPOS: <b>${formatNumber(item.stok_sistem)}</b></span>
       `;
       $("qty").focus();
     }
@@ -540,28 +557,45 @@
         return;
       }
 
+      // TABEL VERSI AUDIT (Dengan Kolom Sistem & Selisih)
       const html = `
         <table>
           <thead>
             <tr>
               <th>Barang</th>
-              <th>Barcode</th>
               <th class="qty">Fisik</th>
+              <th class="qty">Sistem</th>
+              <th class="qty">Selisih</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            ${myRows.map(row => `
+            ${myRows.map(row => {
+              
+              // Logika pewarnaan angka selisih
+              let selisihClass = "";
+              let selisihTeks = formatNumber(row.qty_selisih);
+              
+              if (row.qty_selisih < 0) {
+                selisihClass = "text-danger"; // Minus -> Merah
+              } else if (row.qty_selisih > 0) {
+                selisihClass = "text-success"; // Plus -> Hijau
+                selisihTeks = "+" + selisihTeks; 
+              }
+
+              return `
               <tr>
                 <td>
                   <strong>${escapeHtml(row.nama_barang)}</strong>
-                  <span class="pill">${escapeHtml(row.kode_item)} / ${escapeHtml(row.kode_gudang)}</span>
+                  <div class="pill">${escapeHtml(row.kode_item)} / ${escapeHtml(row.barcode)}</div>
                 </td>
-                <td>${escapeHtml(row.barcode)}</td>
                 <td class="qty">${formatNumber(row.qty_fisik)}</td>
+                <td class="qty text-primary">${formatNumber(row.qty_inventory)}</td>
+                <td class="qty ${selisihClass}" style="font-weight: 900;">${selisihTeks}</td>
                 <td><button class="btn-danger" type="button" style="padding:6px 10px;" onclick="deleteRow(${row.id})">Del</button></td>
               </tr>
-            `).join("")}
+              `;
+            }).join("")}
           </tbody>
         </table>
       `;
@@ -619,7 +653,6 @@
       }
     }
 
-    // FUNGSI DOWNLOAD SO DIPISAH MENJADI DUA (PARSIAL & GLOBAL)
     function executeDownload(mode) {
       const store = $("store").value;
       const petugas = $("petugas").value.trim();
@@ -632,20 +665,16 @@
       window.location.href = `${baseUrl}/download/${encodeURIComponent(store)}?mode=${mode}&petugas=${encodeURIComponent(petugas)}`;
     }
 
-    $("downloadBtn").addEventListener("click", () => {
-      executeDownload("partial");
-    });
+    $("downloadBtn").addEventListener("click", () => executeDownload("partial"));
 
     $("downloadGlobalBtn").addEventListener("click", () => {
       const confirmGlobal = confirm(
         "PENTING: Anda akan melakukan DOWNLOAD SO GLOBAL (Sapu Jagat).\n\n" +
         "Sistem akan menarik seluruh Master Item dari IPOS dan mengubah stok barang yang TIDAK DI-SCAN menjadi 0.\n" +
-        "Proses ini mungkin membutuhkan waktu 3-5 Menit.\n\n" +
+        "Proses ini mungkin membutuhkan waktu 3-5 menit.\n\n" +
         "Lanjutkan?"
       );
-      if (confirmGlobal) {
-        executeDownload("global");
-      }
+      if (confirmGlobal) executeDownload("global");
     });
 
     async function startScanner() {
