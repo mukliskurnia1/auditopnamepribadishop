@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pribadishop Opname Tools - AUDIT</title>
+  <title>Pribadishop Opname Tools</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
@@ -17,6 +17,7 @@
       --success: #15803d;
       --danger: #b42318;
       --warn: #b76e00;
+      --warn-dark: #8a5300;
     }
 
     * { box-sizing: border-box; }
@@ -59,16 +60,6 @@
       font-size: 20px;
       line-height: 1.1;
       color: var(--text);
-    }
-    
-    .badge-audit {
-      background: #f59e0b;
-      color: #fff;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 10px;
-      vertical-align: middle;
-      margin-left: 5px;
     }
 
     .subtitle {
@@ -154,6 +145,8 @@
     .btn-success:hover { background: #106330; }
     .btn-danger { background: var(--danger); }
     .btn-danger:hover { background: #8d1d15; }
+    .btn-warn { background: var(--warn); }
+    .btn-warn:hover { background: var(--warn-dark); }
 
     #reader {
       display: none;
@@ -186,9 +179,10 @@
       line-height: 1.35;
     }
 
+    /* Diubah menjadi 4 kolom untuk menampung tombol Global */
     .action-panel {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
       margin-bottom: 15px;
     }
@@ -198,11 +192,16 @@
       padding: 8px;
       border-radius: 8px;
       border: 1px solid #eaecf0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     .action-item button {
       width: 100%;
       margin-top: 0;
       margin-bottom: 6px;
+      font-size: 13px;
+      padding: 8px;
     }
     .action-item small {
       display: block;
@@ -241,14 +240,10 @@
     }
 
     .qty {
-      width: 65px;
+      width: 76px;
       text-align: right;
       font-weight: 700;
     }
-
-    .text-danger { color: var(--danger); }
-    .text-success { color: var(--success); }
-    .text-primary { color: var(--primary); }
 
     .empty {
       padding: 22px;
@@ -286,7 +281,8 @@
       .grid { grid-template-columns: 1fr; }
       header { align-items: flex-start; flex-direction: column; }
       .status { white-space: normal; }
-      .action-panel { grid-template-columns: 1fr; }
+      /* Di HP jadi 2 kolom agar tombol tidak terlalu kecil */
+      .action-panel { grid-template-columns: repeat(2, 1fr); }
       .table-wrap { max-height: none; }
     }
   </style>
@@ -298,7 +294,7 @@
       <div class="header-left">
         <img src="https://res.cloudinary.com/dvvjbnjzd/image/upload/v1781251741/logo_Pribadishop_mhpxft.jpg" alt="Logo" class="logo">
         <div class="header-text">
-          <h1>Pribadishop Opname <span class="badge-audit">AUDIT</span></h1>
+          <h1>Pribadishop Opname Tools</h1>
           <p class="subtitle">Dibuat oleh @muklis by anntech.my.id</p>
         </div>
       </div>
@@ -309,7 +305,7 @@
       <section>
         <h2>Input Scan</h2>
 
-        <label for="petugas">Petugas Audit</label>
+        <label for="petugas">Petugas</label>
         <input id="petugas" autocomplete="name" placeholder="Nama petugas (harus sama agar tabel muncul)">
 
         <label for="store">Cabang / Gudang</label>
@@ -346,16 +342,20 @@
         
         <div class="action-panel">
           <div class="action-item">
-            <button id="syncBtn" class="btn-success" type="button">Kirim ke Sheet</button>
-            <small>Kirim data gabungan <b>jika semua orang</b> sudah beres hitung.</small>
+            <button id="syncBtn" class="btn-success" type="button">Kirim Sheet</button>
+            <small>Kirim data gabungan (Parsial).</small>
           </div>
           <div class="action-item">
-            <button id="downloadBtn" type="button">Download SO</button>
-            <small>Download <b>per orang</b> (hanya data hitung milik Anda).</small>
+            <button id="downloadBtn" type="button">SO Parsial</button>
+            <small>Area Anda saja (Sesuai Scan).</small>
+          </div>
+          <div class="action-item">
+            <button id="downloadGlobalBtn" class="btn-warn" type="button">SO Global</button>
+            <small>Tarik seluruh Master Data IPOS (Sisa = 0).</small>
           </div>
           <div class="action-item">
             <button id="clearBtn" class="btn-danger" type="button">Kosongkan</button>
-            <small>Kosongkan <b>semua data gabungan</b> tim di cabang ini.</small>
+            <small>Hapus data cabang ini.</small>
           </div>
         </div>
 
@@ -373,11 +373,11 @@
     // PETA (ROUTING) CLOUDFLARE TUNNEL TIAP CABANG
     // ==========================================
     const TUNNEL_MAP = {
-      "UTM": "https://api-utm.anntech.my.id",
-      "GDB": "https://api-utm.anntech.my.id",
-      "PSSMD": "https://api-pssmd.anntech.my.id",
-      "TAMPOS": "https://api-tampomas.anntech.my.id",
-      "SITUR": "https://api-situraja.anntech.my.id"
+      "UTM": "https://api-training.anntech.my.id",
+      "GDB": "https://api-training.anntech.my.id", // Asumsi GDB pakai server Pusat/UTM
+      "PSSMD": "https://api-training.anntech.my.id",
+      "TAMPOS": "https://api-training.anntech.my.id",
+      "SITUR": "https://api-training.anntech.my.id"
     };
 
     function getBackendUrl() {
@@ -458,7 +458,7 @@
       state.currentItem = item;
       $("itemResult").innerHTML = `
         <strong>${escapeHtml(item.nama_barang)}</strong>
-        <span>Kode item: ${escapeHtml(item.kodeitem)} | Stok Sistem: ${formatNumber(item.stok_sistem)}</span>
+        <span>Kode item: ${escapeHtml(item.kodeitem)}</span>
       `;
       $("qty").focus();
     }
@@ -540,7 +540,6 @@
         return;
       }
 
-      // TABEL VERSI AUDIT
       const html = `
         <table>
           <thead>
@@ -548,26 +547,11 @@
               <th>Barang</th>
               <th>Barcode</th>
               <th class="qty">Fisik</th>
-              <th class="qty">Sistem</th>
-              <th class="qty">Selisih</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            ${myRows.map(row => {
-              
-              // Logika pewarnaan angka selisih
-              let selisihClass = "";
-              let selisihTeks = formatNumber(row.qty_selisih);
-              
-              if (row.qty_selisih < 0) {
-                selisihClass = "text-danger"; // Minus -> Merah
-              } else if (row.qty_selisih > 0) {
-                selisihClass = "text-success"; // Plus -> Hijau
-                selisihTeks = "+" + selisihTeks; 
-              }
-
-              return `
+            ${myRows.map(row => `
               <tr>
                 <td>
                   <strong>${escapeHtml(row.nama_barang)}</strong>
@@ -575,12 +559,9 @@
                 </td>
                 <td>${escapeHtml(row.barcode)}</td>
                 <td class="qty">${formatNumber(row.qty_fisik)}</td>
-                <td class="qty text-primary">${formatNumber(row.qty_inventory)}</td>
-                <td class="qty ${selisihClass}" style="font-weight: 900;">${selisihTeks}</td>
-                <td><button class="btn-danger" style="padding: 6px 10px; min-height: auto;" type="button" onclick="deleteRow(${row.id})">Del</button></td>
+                <td><button class="btn-danger" type="button" style="padding:6px 10px;" onclick="deleteRow(${row.id})">Del</button></td>
               </tr>
-              `;
-            }).join("")}
+            `).join("")}
           </tbody>
         </table>
       `;
@@ -624,7 +605,7 @@
       const originalText = btn.textContent;
       
       btn.disabled = true;
-      btn.textContent = "⏳ Mengirim... Mohon Tunggu";
+      btn.textContent = "⏳ Mengirim...";
       
       try {
         const data = await apiJson(`/api/sync/${encodeURIComponent(store)}`, { method: "POST" });
@@ -638,7 +619,8 @@
       }
     }
 
-    function downloadSo() {
+    // FUNGSI DOWNLOAD SO DIPISAH MENJADI DUA (PARSIAL & GLOBAL)
+    function executeDownload(mode) {
       const store = $("store").value;
       const petugas = $("petugas").value.trim();
       const baseUrl = getBackendUrl();
@@ -646,9 +628,25 @@
       if (!baseUrl) return toast("Sistem gagal mengalihkan download.", "error");
       if (!petugas) return toast("Isi nama petugas dulu untuk mendownload file khusus Anda.", "error");
       
-      logActivity("Klik Tombol DOWNLOAD SO (Per Orang)"); 
-      window.location.href = `${baseUrl}/download/${encodeURIComponent(store)}?petugas=${encodeURIComponent(petugas)}`;
+      logActivity(`Klik Tombol DOWNLOAD SO (${mode.toUpperCase()})`); 
+      window.location.href = `${baseUrl}/download/${encodeURIComponent(store)}?mode=${mode}&petugas=${encodeURIComponent(petugas)}`;
     }
+
+    $("downloadBtn").addEventListener("click", () => {
+      executeDownload("partial");
+    });
+
+    $("downloadGlobalBtn").addEventListener("click", () => {
+      const confirmGlobal = confirm(
+        "PENTING: Anda akan melakukan DOWNLOAD SO GLOBAL (Sapu Jagat).\n\n" +
+        "Sistem akan menarik seluruh Master Item dari IPOS dan mengubah stok barang yang TIDAK DI-SCAN menjadi 0.\n" +
+        "Proses ini mungkin membutuhkan waktu 3-5 Menit.\n\n" +
+        "Lanjutkan?"
+      );
+      if (confirmGlobal) {
+        executeDownload("global");
+      }
+    });
 
     async function startScanner() {
       if (state.scanning) return;
@@ -723,8 +721,8 @@
     $("scanBtn").addEventListener("click", startScanner);
     $("stopBtn").addEventListener("click", stopScanner);
     $("syncBtn").addEventListener("click", syncRows);
-    $("downloadBtn").addEventListener("click", downloadSo);
     $("clearBtn").addEventListener("click", clearRows);
+    
     $("barcode").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
