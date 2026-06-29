@@ -118,6 +118,11 @@
       color: #344054;
     }
 
+    /* Modifikasi wrapper input agar kotak sugesti posisinya pas */
+    .input-wrapper {
+      position: relative;
+    }
+
     input, select {
       width: 100%;
       min-height: 43px;
@@ -134,6 +139,34 @@
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
     }
+
+    /* Desain Kotak Auto-Suggest */
+    .suggestions-box {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 4px;
+      background: #fff;
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .suggestion-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: #e0e7ff; } /* Hover warna ungu indigo */
+    .suggestion-item strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 2px;}
+    .suggestion-item span { color: var(--muted); }
 
     button {
       min-height: 43px;
@@ -234,7 +267,7 @@
       border-collapse: collapse;
       font-size: 13px;
       background: #fff;
-      min-width: 500px; /* Lebar minimum agar kolom audit tidak terlalu terjepit */
+      min-width: 500px; 
     }
 
     th, td {
@@ -334,18 +367,22 @@
         </select>
 
         <div class="btn-row">
-          <button id="scanBtn" type="button">Scan Kamera</button>
+          <button id="scanBtn" type="button">📸 Scan Kamera</button>
           <button id="stopBtn" class="btn-soft" type="button" disabled>Tutup Kamera</button>
         </div>
         <div id="reader"></div>
 
-        <label for="barcode">Barcode / Kode Item</label>
-        <input id="barcode" inputmode="numeric" autocomplete="off" placeholder="Scan atau ketik barcode">
+        <label for="barcode">Barcode / Nama Barang</label>
+        <div class="input-wrapper">
+          <input id="barcode" type="text" autocomplete="off" placeholder="Ketik manual, atau tembak Scanner..." autofocus>
+          <div id="suggestions" class="suggestions-box"></div>
+        </div>
+
         <button id="findBtn" class="btn-full btn-soft" type="button">Cari Barang</button>
 
         <div class="result" id="itemResult">
           <strong>Belum ada barang dipilih</strong>
-          <span>Scan barcode atau masukkan kode item manual.</span>
+          <span>Ketik, scan kamera, atau gunakan alat barcode scanner.</span>
         </div>
 
         <label for="qty">Qty Fisik</label>
@@ -477,6 +514,7 @@
         <strong>${escapeHtml(item.nama_barang)}</strong>
         <span>Kode item: ${escapeHtml(item.kodeitem)} | Stok IPOS: <b>${formatNumber(item.stok_sistem)}</b></span>
       `;
+      // AUTO-FOCUS ke QTY
       $("qty").focus();
     }
 
@@ -484,9 +522,62 @@
       state.currentItem = null;
       $("barcode").value = "";
       $("qty").value = "";
-      $("itemResult").innerHTML = `<strong>${message}</strong><span>Scan barcode atau masukkan kode item manual.</span>`;
+      $("itemResult").innerHTML = `<strong>${message}</strong><span>Ketik manual, scan kamera, atau gunakan alat barcode scanner.</span>`;
+      // AUTO-FOCUS ke Barcode
       $("barcode").focus();
     }
+
+    // ==========================================
+    // LOGIKA AUTO-SUGGEST DENGAN DEBOUNCE
+    // ==========================================
+    let debounceTimer;
+    
+    $("barcode").addEventListener("input", (e) => {
+      clearTimeout(debounceTimer); 
+      const val = e.target.value.trim();
+      const suggestionsBox = $("suggestions");
+      
+      if (val.length < 3) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
+      
+      debounceTimer = setTimeout(async () => {
+        try {
+          const store = $("store").value;
+          const data = await apiJson(`/api/cari_nama?store=${encodeURIComponent(store)}&keyword=${encodeURIComponent(val)}`);
+          
+          if (data.data && data.data.length > 0) {
+            suggestionsBox.innerHTML = "";
+            data.data.forEach(item => {
+              const div = document.createElement("div");
+              div.className = "suggestion-item";
+              div.innerHTML = `<strong>${escapeHtml(item.namaitem)}</strong><span>Kode: ${escapeHtml(item.kodeitem)}</span>`;
+              
+              div.addEventListener("click", () => {
+                $("barcode").value = item.kodeitem; 
+                suggestionsBox.style.display = "none";
+                findItem(item.kodeitem); 
+              });
+              
+              suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = "block";
+          } else {
+            suggestionsBox.style.display = "none";
+          }
+        } catch (err) {
+          console.log("Gagal memuat suggest:", err);
+        }
+      }, 500); 
+    });
+
+    document.addEventListener("click", function (e) {
+      if (e.target !== $("barcode") && !$("suggestions").contains(e.target)) {
+        $("suggestions").style.display = "none";
+      }
+    });
+    // ==========================================
 
     async function findItem(barcodeValue) {
       saveSettings();
@@ -496,6 +587,8 @@
       if (!barcode) return toast("Barcode masih kosong.", "error");
 
       $("itemResult").innerHTML = "<strong>Mencari barang...</strong><span>Mohon tunggu.</span>";
+      $("suggestions").style.display = "none"; // Sembunyikan kotak sugesti
+      
       try {
         const data = await apiJson(`/api/cek_barang?store=${encodeURIComponent(store)}&barcode=${encodeURIComponent(barcode)}`);
         renderItem(data);
@@ -663,18 +756,15 @@
       
       logActivity(`Klik Tombol DOWNLOAD SO (${mode.toUpperCase()})`); 
       
-      // Deteksi tombol mana yang diklik agar animasinya tepat sasaran
       const btn = mode === "global" ? $("downloadGlobalBtn") : $("downloadBtn");
       const originalText = btn.textContent;
       
-      // Kunci tombol dan ubah teks jadi animasi loading
       btn.disabled = true;
       btn.textContent = "⏳ Memproses...";
 
       try {
         const url = `${baseUrl}/download/${encodeURIComponent(store)}?mode=${mode}&petugas=${encodeURIComponent(petugas)}`;
         
-        // Meminta file ke Python dan menunggunya selesai menggunakan fetch
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -682,14 +772,12 @@
           throw new Error(errText || "Gagal mengunduh file SO.");
         }
 
-        // Mengambil nama file asli dari server, atau pakai nama cadangan
         let filename = `format_so_${store}_${mode}_${petugas}.xlsx`;
         const disposition = response.headers.get('content-disposition');
         if (disposition && disposition.includes('filename=')) {
             filename = disposition.split('filename=')[1].replace(/["']/g, "");
         }
 
-        // Mengubah data yang diterima menjadi blob dan mendownloadnya
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -698,7 +786,6 @@
         document.body.appendChild(a);
         a.click();
         
-        // Membersihkan url sementara setelah file terdownload
         a.remove();
         window.URL.revokeObjectURL(downloadUrl);
         
@@ -706,7 +793,6 @@
       } catch (err) {
         toast("Download gagal: " + err.message, "error");
       } finally {
-        // Kembalikan tombol ke warna dan tulisan aslinya
         btn.disabled = false;
         btn.textContent = originalText;
       }
@@ -799,16 +885,17 @@
     $("syncBtn").addEventListener("click", syncRows);
     $("clearBtn").addEventListener("click", clearRows);
     
+    // [INTI ALUR KETIK MANUAL / SCAN FISIK] 
     $("barcode").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        findItem();
+        findItem(); 
       }
     });
     $("qty").addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        saveScan();
+        saveScan(); 
       }
     });
 
